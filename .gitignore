@@ -1,0 +1,48 @@
+# Build artifacts
+build/
+cmake-build-*/
+out/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# Object files
+*.o
+*.obj
+*.lo
+*.la
+
+# Libraries
+*.a
+*.so
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Logs
+*.log
+
+# OS-specific
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sanitizer / profiling output
+*.prof
+*.gcda
+*.gcno
+*.gcov
