@@ -14,6 +14,7 @@ endif()
 
 # Define the library
 add_library(lumina
+    src/database.cc
     include/lumina/common.h
     include/lumina/db.h
     include/lumina/options.h
