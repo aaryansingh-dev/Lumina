@@ -36,7 +36,7 @@ public:
         return Status::OK();
     }
 
-    Status Delete(const Slice& key){
+    Status Delete(const Slice& key) override{
         (void)key;
         return Status::OK();
     }

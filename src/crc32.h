@@ -65,7 +65,7 @@ uint32_t Value(const char* data, size_t n);
  * @param n Length of the additional data in bytes.
  * @return Updated CRC32 value including the new data.
  */
-inline uint32_t Extend(uint32_t crc, const char* data, size_t n);
+uint32_t Extend(uint32_t crc, const char* data, size_t n);
 
 
 }
