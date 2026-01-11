@@ -15,9 +15,17 @@ endif()
 # Define the library
 add_library(lumina
     src/database.cc
+    src/crc32.cc
+    src/log_writer.cc
+
+    # Optional: headers for IDE visibility
     include/lumina/common.h
     include/lumina/db.h
     include/lumina/options.h
+    src/log_format.h
+    src/log_writer.h
+    src/crc32.h
+    src/coding.h
 )
 
 # Modern CMake: Scoped include directories
@@ -26,5 +34,15 @@ target_include_directories(lumina PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+
+add_executable(lumina_test
+    src/main.cc
+)
+
+target_include_directories(lumina_test PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+target_link_libraries(lumina_test PRIVATE lumina)
 
 enable_testing()
