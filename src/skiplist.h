@@ -62,6 +62,28 @@ private:
 
 };
 
+template <typename Key, class Comparator>
+struct SkipList<Key, Comparator>::Node {
+    Key const key;
+
+    explicit Node(const Key& k) : key(k){}
+
+    Node* Next(int n){
+        assert(n >= 0);
+        return next_[n].load(std::memory_order_acquire);
+    }
+
+    void SetNext(int n){
+        assert(n>=0);
+        next_[n].store(std::memory_order_release);
+    }
+    
+private:
+    std::atomic<Node*> next_[1];
+};
+
+
+
 }
 
 #endif
