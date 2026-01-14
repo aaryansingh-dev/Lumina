@@ -139,7 +139,27 @@ int SkipList<Key, Comparator>::RandomHeight() {
 template <typename Key, class Comparator>
 void SkipList<Key, Comparator>::Insert(const Key& key){
     Node* prev[kMaxHeight];
-    
+    Node* x = FindGreaterOrEqual(key, prev);
+
+    // we dont want duplicate keys, so we do this
+    assert(x == nullptr || !Equal(key, x->key));
+
+    int height = RandomHeight();
+    int current_max = max_height_.load(std::memory_order_acquire);
+    if (height > current_max){
+        // max_height_ = 3, max_level = 2... because levels are 0 indexed. This is why we start with current_max level
+        for(int i = current_max; i < height; i++){
+            prev[i] = head_;
+        }
+        max_height_.store(height, std::memory_order_release);
+    }
+
+    newNode = NewNode(key, height);
+    // Now we will set the prevs with level below or equal to the height
+    for (int level = 0; level < height; level++){
+        newNode->SetNext(level, prev[level]->Next(level));
+        prev[level]->SetNext(level, newNode);
+    }
 }
 
 
