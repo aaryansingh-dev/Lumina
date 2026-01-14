@@ -179,7 +179,11 @@ typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindGreater
     }
 }
 
-
+template <typename Key, class Comparator>
+bool SkipList<Key, Comparator>::Contains(const Key& key) const {
+    Node* x = FindGreaterOrEqual(key, nullptr);
+    return (x != nullptr && Equal(key, x->key));
+}
 
 }
 #endif
