@@ -83,6 +83,7 @@ private:
     std::atomic<Node*> next_[1];
 };
 
+// NewNode()
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::NewNode(const Key& key, int height) {
     size_t size = sizeof(Node) + sizeof(std::atomic<Node*>) * (height - 1);
@@ -90,7 +91,7 @@ typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::NewNode(con
     return new (mem) Node(key);
 }
 
-
+// SkipList()
 template <typename Key, class Comparator>
 SkipList<Key, Comparator>::SkipList(Comparator cmp)
     : head_(NewNode(Key(), kMaxHeight)),
@@ -99,9 +100,48 @@ SkipList<Key, Comparator>::SkipList(Comparator cmp)
     for (int i = 0; i < kMaxHeight; i++) {
         head_->SetNext(i, nullptr);
     }
-
-
 }
+
+// Destructor definition
+template <typename Key, class Comparator>
+SkipList<Key, Comparator>::~SkipList() {
+    Node* node = head_;
+    while (node != nullptr) {
+        Node* next = node->Next(0);
+        node->~Node();
+        free(node);
+        node = next;
+    }
+}
+
+template <typename Key, class Comparator>
+int SkipList<Key, Comparator>::RandomHeight() {
+    // Linear Congruential Generator (LCG) - Faster and thread-local
+    // rand() is not used because it has a global lock which can slow down the process, and also introduce bias because
+    // sharing of the seed.
+    static thread_local uint32_t seed = static_cast<uint32_t>(time(nullptr));
+    
+    // Increase height with probability 1 in 4
+    int height = 1;
+    while (height < kMaxHeight) {
+        // Simple LCG step
+        seed = seed * 1664525 + 1013904223;
+        if ((seed % 4) == 0) {
+            height++;
+        } else {
+            break;
+        }
+    }
+    return height;
+}
+
+
+template <typename Key, class Comparator>
+void SkipList<Key, Comparator>::Insert(const Key& key){
+    Node* prev[kMaxHeight];
+    
+}
+
 
 }
 #endif
