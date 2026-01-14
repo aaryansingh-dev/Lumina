@@ -26,6 +26,7 @@ add_library(lumina
     src/log_writer.h
     src/crc32.h
     src/coding.h
+    src/skiplist.h
 )
 
 # Modern CMake: Scoped include directories
@@ -33,6 +34,8 @@ add_library(lumina
 target_include_directories(lumina PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
 
 add_executable(lumina_test
