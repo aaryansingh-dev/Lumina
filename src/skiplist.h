@@ -162,6 +162,24 @@ void SkipList<Key, Comparator>::Insert(const Key& key){
     }
 }
 
+template<typename Key, class Comparator>
+typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key, Node** prev) const {
+
+    Node* cur = head_;
+    int level = max_height_.load(std::memory_order_acquire)-1;
+    while (true){
+        Node* next = cur->Next(level);
+        if (next != nullptr && compare_(next->Key, key) < 0){
+            cur = next;
+        }else{
+            if (prev != nullptr) prev[level] = cur;
+            if (level == 0) return next;
+            else level--;
+        }
+    }
+}
+
+
 
 }
 #endif
