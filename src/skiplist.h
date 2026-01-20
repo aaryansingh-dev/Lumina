@@ -28,7 +28,7 @@ public:
     class Iterator{
         public:
             explicit Iterator(const Skiplist* list);    // cannot modify skiplist, using this pointer
-            bool Valid() const; 
+            bool Valid() const;     
             const Key& key() const;
             void Next();
             void Prev();
@@ -139,7 +139,7 @@ int SkipList<Key, Comparator>::RandomHeight() {
 template <typename Key, class Comparator>
 void SkipList<Key, Comparator>::Insert(const Key& key){
     Node* prev[kMaxHeight];
-    Node* x = FindGreaterOrEqual(key, prev);
+    Node* x = FindGreaterOrEqual(key, prev); // the next element in the skiplist(at the very bottom layer)
 
     // we dont want duplicate keys, so we do this
     assert(x == nullptr || !Equal(key, x->key));
