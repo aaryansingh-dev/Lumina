@@ -84,6 +84,60 @@ namespace lumina{
             return r;
         }
     };
+
+
+    /**
+     * @brief Helper for lookups to avoid unnecessary memory allocations.
+     * * Design Decision: LookupKey constructs a single contiguous buffer on 
+     * the stack that includes the length-prefix. This allows the MemTable 
+     * to use a very fast memcmp-based search.
+     */
+    class LookupKey {
+    public:
+        // Initialize a helper for looking up user_key at a specific sequence.
+        LookupKey(const Slice& user_key, uint64_t sequence) {
+            size_t usize = user_key.size();
+            size_t needed = usize + 13;  // 5 (max varint32) + usize + 8 (fixed64)
+            char* dst;
+            if (needed <= sizeof(space_)) {
+                dst = space_;
+            } else {
+                dst = new char[needed];
+            }
+            start_ = dst;
+            // 1. Store length of [user_key + 8 bytes for seq/type]
+            kstart_ = EncodeVarint32(dst, static_cast<uint32_t>(usize + 8));
+            // 2. Store user key
+            memcpy(kstart_, user_key.data(), usize);
+            // 3. Store packed seq/type (using kTypeValue as it's the search boundary)
+            end_ = kstart_ + usize;
+            EncodeFixed64(end_, (sequence << 8) | kTypeValue);
+            end_ += 8;
+        }
+
+        ~LookupKey() {
+            if (start_ != space_) delete[] start_;
+        }
+
+        // Returns a slice suitable for MemTable lookups (includes length prefix)
+        Slice memtable_key() const { return Slice(start_, end_ - start_); }
+
+        // Returns a slice of the internal key (no length prefix)
+        Slice internal_key() const { return Slice(kstart_, end_ - kstart_); }
+
+        // Returns the user key
+        Slice user_key() const { return Slice(kstart_, end_ - kstart_ - 8); }
+
+    private:
+        const char* start_;
+        const char* kstart_;
+        const char* end_;
+        char space_[200]; // Optimization: avoid heap for most keys
+
+        LookupKey(const LookupKey&) = delete;
+        LookupKey& operator=(const LookupKey&) = delete;
+    };
+
 }
 
 
