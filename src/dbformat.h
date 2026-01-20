@@ -34,13 +34,29 @@ namespace lumina{
         }
 
         Slice user_key() const{
+            assert(rep_.size() >= 8);
+            return Slice(rep_.data(), rep_.size()-8);     // remove meta-data from the end
         }
 
         uint64_t sequence() const{
+            assert(rep_.size() >= 8);
+            uint64_t packed = DecodeFixed64(rep_.data() + rep_.size() - 8);
+            return packed >> 8;
         }
 
         ValueType type() const{
+            assert(rep_.size() >= 8);
+            uint64_t packed = DecodeFixed64(rep_.data() + rep_.size() - 8);
+            return static_cast<ValueType>(packed && (0xff));
         }
+
+        Slice Encode() const{
+            return Slice(rep_);
+        }
+
+        void DecodeFrom(const Slice& s) { rep_.assign(s.data(), s.size()); }
+
+        void Clear() { rep_.clear(); }
     
     private:
         // owns the internal key memory.
