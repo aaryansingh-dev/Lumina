@@ -63,6 +63,27 @@ namespace lumina{
         std::string rep_;
 
     };
+
+    /**
+    * @brief Comparator for InternalKeys.
+    */
+    struct InternalKeyComparator {
+        int operator()(const Slice& a, const Slice& b) const {
+            // 1. Compare user keys
+            Slice user_a(a.data(), a.size() - 8);
+            Slice user_b(b.data(), b.size() - 8);
+            int r = user_a.compare(user_b);
+            
+            if (r == 0) {
+                // 2. Compare sequence numbers (Descending for newest first)
+                uint64_t num_a = DecodeFixed64(a.data() + a.size() - 8);
+                uint64_t num_b = DecodeFixed64(b.data() + b.size() - 8);
+                if (num_a > num_b) r = -1;
+                else if (num_a < num_b) r = +1;
+            }
+            return r;
+        }
+    };
 }
 
 
