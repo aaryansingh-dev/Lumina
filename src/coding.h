@@ -74,6 +74,18 @@ namespace lumina{
         EncodeFixed64(buf, value);
         dst->append(buf, sizeof(buf));
     }
+
+    /**
+     * @brief Encodes a 32-bit unsigned integer into a variable-length format.
+     * Returns the pointer to the byte just after the encoded value.
+     */
+    char* EncodeVarint32(char* dst, uint32_t v);
+
+    /**
+     * @brief Decodes a Varint32 from [p..limit-1].
+     * Returns pointer after the value, or nullptr on error.
+     */
+    const char* GetVarint32Ptr(const char* p, const char* limit, uint32_t* v);
 }
 
 #endif
