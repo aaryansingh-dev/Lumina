@@ -27,17 +27,45 @@ public:
 
     class Iterator{
         public:
-            explicit Iterator(const Skiplist* list);    // cannot modify skiplist, using this pointer
-            bool Valid() const;     
-            const Key& key() const;
-            void Next();
-            void Prev();
-            void Seek(const Key& target);
-            void SeekToFirst();
-            void SeekToLast();
+            explicit Iterator(const SkipList* list) : list_(list), node_(nullptr) {}
+
+            bool Valid() const { return node_ != nullptr; }
+
+            const Key& key() const {
+                assert(Valid());
+                return node_->key;
+            }
+
+            void Next() {
+                assert(Valid());
+                node_ = node_->Next(0);
+            }
+
+            void Prev() {
+                assert(Valid());
+                node_ = list_->FindLessThan(node_->key);
+                if (node_ == list_->head_) {
+                    node_ = nullptr;
+                }
+            }
+
+            void Seek(const Key& target) {
+                node_ = list_->FindGreaterOrEqual(target, nullptr);
+            }
+
+            void SeekToFirst() {
+                node_ = list_->head_->Next(0);
+            }
+
+            void SeekToLast() {
+                node_ = list_->FindLast();
+                if (node_ == list_->head_) {
+                    node_ = nullptr;
+                }
+            }  
         
         private:
-            const SkipList* list;
+            const SkipList* list_;
             Node* node_;
     };
 
@@ -114,6 +142,39 @@ SkipList<Key, Comparator>::~SkipList() {
     }
 }
 
+
+template <typename Key, class Comparator>
+typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindLessThan(const Key& key) const {
+    Node* x = head_;
+    int level = max_height_.load(std::memory_order_relaxed) - 1;
+    while (true) {
+        Node* next = x->Next(level);
+        if (next != nullptr && compare_(next->key, key) < 0) {
+            x = next;
+        } else {
+            if (level == 0) return x;
+            else level--;
+        }
+    }
+}
+
+
+template <typename Key, class Comparator>
+typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindLast() const {
+    Node* x = head_;
+    int level = max_height_.load(std::memory_order_relaxed) - 1;
+    while (true) {
+        Node* next = x->Next(level);
+        if (next != nullptr) {
+            x = next;
+        } else {
+            if (level == 0) return x;
+            else level--;
+        }
+    }
+}
+
+
 template <typename Key, class Comparator>
 int SkipList<Key, Comparator>::RandomHeight() {
     // Linear Congruential Generator (LCG) - Faster and thread-local
@@ -154,7 +215,7 @@ void SkipList<Key, Comparator>::Insert(const Key& key){
         max_height_.store(height, std::memory_order_release);
     }
 
-    newNode = NewNode(key, height);
+    Node* newNode = NewNode(key, height);
     // Now we will set the prevs with level below or equal to the height
     for (int level = 0; level < height; level++){
         newNode->SetNext(level, prev[level]->Next(level));
@@ -169,7 +230,7 @@ typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindGreater
     int level = max_height_.load(std::memory_order_acquire)-1;
     while (true){
         Node* next = cur->Next(level);
-        if (next != nullptr && compare_(next->Key, key) < 0){
+        if (next != nullptr && compare_(next->key, key) < 0){
             cur = next;
         }else{
             if (prev != nullptr) prev[level] = cur;
