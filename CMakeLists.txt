@@ -46,6 +46,7 @@ find_package(GTest REQUIRED)
 
 add_executable(lumina_test
     tests/coding_test.cc
+    tests/skiplist_test.cc
 )
 
 target_include_directories(lumina_test PRIVATE
