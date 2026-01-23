@@ -108,11 +108,11 @@ namespace lumina{
             // 1. Store length of [user_key + 8 bytes for seq/type]
             kstart_ = EncodeVarint32(dst, static_cast<uint32_t>(usize + 8));
             // 2. Store user key
-            memcpy(kstart_, user_key.data(), usize);
+            memcpy(const_cast<char*>(kstart_), user_key.data(), usize);
             // 3. Store packed seq/type (using kTypeValue as it's the search boundary)
-            end_ = kstart_ + usize;
-            EncodeFixed64(end_, (sequence << 8) | kTypeValue);
-            end_ += 8;
+            char* end_ptr = const_cast<char*>(kstart_) + usize;
+            EncodeFixed64(end_ptr, (sequence << 8) | kTypeValue);
+            end_ = end_ptr + 8;
         }
 
         ~LookupKey() {
