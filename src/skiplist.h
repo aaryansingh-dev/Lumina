@@ -8,6 +8,9 @@
 #include <cassert>
 
 namespace lumina{
+
+const int seed_multiplier = 1664525;
+const int seed_add = 1013904223;
     
 template <typename Key, class Comparator>
 class SkipList{
@@ -145,14 +148,14 @@ SkipList<Key, Comparator>::~SkipList() {
 
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindLessThan(const Key& key) const {
-    Node* x = head_;
+    Node* cur = head_;
     int level = max_height_.load(std::memory_order_relaxed) - 1;
     while (true) {
-        Node* next = x->Next(level);
+        Node* next = cur->Next(level);
         if (next != nullptr && compare_(next->key, key) < 0) {
-            x = next;
+            cur = next;
         } else {
-            if (level == 0) return x;
+            if (level == 0) return cur;
             else level--;
         }
     }
@@ -161,14 +164,14 @@ typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindLessTha
 
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node* SkipList<Key, Comparator>::FindLast() const {
-    Node* x = head_;
+    Node* cur = head_;
     int level = max_height_.load(std::memory_order_relaxed) - 1;
     while (true) {
-        Node* next = x->Next(level);
+        Node* next = cur->Next(level);
         if (next != nullptr) {
-            x = next;
+            cur = next;
         } else {
-            if (level == 0) return x;
+            if (level == 0) return cur;
             else level--;
         }
     }
@@ -186,7 +189,7 @@ int SkipList<Key, Comparator>::RandomHeight() {
     int height = 1;
     while (height < kMaxHeight) {
         // Simple LCG step
-        seed = seed * 1664525 + 1013904223;
+        seed = seed * seed_multiplier + seed_add;
         if ((seed % 4) == 0) {
             height++;
         } else {
