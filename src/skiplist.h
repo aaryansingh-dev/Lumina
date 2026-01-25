@@ -11,7 +11,18 @@ namespace lumina{
 
 const int seed_multiplier = 1664525;
 const int seed_add = 1013904223;
-    
+
+
+/**
+ * @brief A thread-safe, probabilistic SkipList implementation.
+ * 
+ * SkipList maintains sorted elements and allows fast search, insertion, and iteration.
+ * It uses a layered linked list with randomized heights to achieve average O(log n) complexity.
+ * 
+ * @tparam Key Type of keys stored in the SkipList.
+ * @tparam Comparator Functor for key comparison. Should implement operator()(a, b) returning:
+ *         -1 if a < b, 1 if a > b, 0 if a == b.
+ */
 template <typename Key, class Comparator>
 class SkipList{
 
@@ -20,30 +31,66 @@ private:
 
 public:
 
+   /**
+     * @brief Construct a new SkipList with the given comparator.
+     * @param cmp Comparator instance to order the keys.
+     */
     explicit SkipList(Comparator cmp);
 
-    // Destructor 
+    /**
+     * @brief Destructor. Cleans up all nodes.
+     */
     ~SkipList();
 
+    /**
+     * @brief Insert a new key into the SkipList.
+     * @param key Key to insert.
+     * @note Duplicate keys are not allowed; assert will fail if key already exists.
+     */
     void Insert(const Key& key);
-    bool Contains(const Key& key) const;    // this function cannot modify value key is pointing to, and cannot modify Skiplist.
 
+    /**
+     * @brief Check if a key exists in the SkipList.
+     * @param key Key to search for.
+     * @return true if the key exists, false otherwise.
+     */
+    bool Contains(const Key& key) const;    // this function will not change the current state of the skiplist.
+
+
+    /**
+     * @brief Iterator to traverse SkipList in order.
+     */
     class Iterator{
         public:
             explicit Iterator(const SkipList* list) : list_(list), node_(nullptr) {}
 
+            /**
+             * @brief Check if iterator is pointing to a valid node.
+             * @return true if valid, false if at end.
+             */
             bool Valid() const { return node_ != nullptr; }
 
+            /**
+             * @brief Return the key at current iterator position.
+             * @return const Key& Current key.
+             * @note Call Valid() before key().
+             */
             const Key& key() const {
                 assert(Valid());
                 return node_->key;
             }
-
+            
+            /**
+             * @brief Move iterator to the next node.
+             */
             void Next() {
                 assert(Valid());
                 node_ = node_->Next(0);
             }
-
+            
+            /**
+             * @brief Move iterator to the previous node.
+             */
             void Prev() {
                 assert(Valid());
                 node_ = list_->FindLessThan(node_->key);
@@ -51,16 +98,25 @@ public:
                     node_ = nullptr;
                 }
             }
-
+            
+            /**
+             * @brief Seek iterator to the first node >= target key.
+             * @param target Key to seek.
+             */
             void Seek(const Key& target) {
                 node_ = list_->FindGreaterOrEqual(target, nullptr);
             }
 
+            /**
+             * @brief Seek iterator to the first element in the list.
+             */
             void SeekToFirst() {
                 node_ = list_->head_->Next(0);
             }
 
-            void SeekToLast() {
+            /**
+             * @brief Seek iterator to the last element in the list.
+             */            void SeekToLast() {
                 node_ = list_->FindLast();
                 if (node_ == list_->head_) {
                     node_ = nullptr;
@@ -81,18 +137,22 @@ private:
     std::atomic<int> max_height_;   // atomic to handle multi-threading and race conditions
 
     Node* NewNode(const Key& key, int height);
-    int RandomHeight();
+    int RandomHeight(); // Randomly generate a node height
     bool Equal(const Key& a, const Key& b) const { return (compare_(a, b) == 0); }
 
-    Node* FindGreaterOrEqual(const Key& key, Node** prev) const;
-    Node* FindLessThan(const Key& key) const;
-    Node* FindLast() const;
+    Node* FindGreaterOrEqual(const Key& key, Node** prev) const;    // Find first node >= key 
+    Node* FindLessThan(const Key& key) const;   // Find last node < key
+    Node* FindLast() const; //Find last node in the list
 
     SkipList(const SkipList&) = delete;
     SkipList& operator=(const SkipList&) = delete;
 
 };
 
+
+/**
+ * @brief Node structure used internally by SkipList.
+ */
 template <typename Key, class Comparator>
 struct SkipList<Key, Comparator>::Node {
     Key const key;
