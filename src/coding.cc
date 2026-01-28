@@ -2,62 +2,49 @@
 
 namespace lumina {
 
+ namespace {
+    constexpr uint32_t kContinuationBit = 0x80;        // 1000 0000
+    constexpr uint32_t kValueMask       = 0x7F;        // 0111 1111
+    constexpr uint32_t kBitsPerByte     = 7;
+    constexpr uint32_t kMaxVarintBytes  = 5;           // ceil(32 / 7)
+    constexpr uint32_t kMaxShift        = 28;          // (kMaxVarintBytes - 1) * 7
+}
+
 /**
- * @brief Encodes a 32-bit unsigned integer into a variable-length format.
- * * Design Decision: Small integers (lengths of keys/values) often fit in 
- * 7 bits. Varints allow us to store those in 1 byte instead of 4, 
- * significantly reducing the memory footprint of the MemTable.
+ * @brief Encodes a 32-bit unsigned integer into variable-length format.
+ * Small values use fewer bytes (LEB128-style encoding).
  */
 char* EncodeVarint32(char* dst, uint32_t v) {
     uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
-    static const int B = 128; // 10000000 in binary
-    if (v < (1 << 7)) {
-        *(ptr++) = v;
-    } else if (v < (1 << 14)) {
-        *(ptr++) = v | B;
-        *(ptr++) = v >> 7;
-    } else if (v < (1 << 21)) {
-        *(ptr++) = v | B;
-        *(ptr++) = (v >> 7) | B;
-        *(ptr++) = v >> 14;
-    } else if (v < (1 << 28)) {
-        *(ptr++) = v | B;
-        *(ptr++) = (v >> 7) | B;
-        *(ptr++) = (v >> 14) | B;
-        *(ptr++) = v >> 21;
-    } else {
-        *(ptr++) = v | B;
-        *(ptr++) = (v >> 7) | B;
-        *(ptr++) = (v >> 14) | B;
-        *(ptr++) = (v >> 21) | B;
-        *(ptr++) = v >> 28;
+
+    while (v >= kContinuationBit) {
+        *ptr++ = static_cast<uint8_t>((v & kValueMask) | kContinuationBit);
+        v >>= kBitsPerByte;
     }
+    *ptr++ = static_cast<uint8_t>(v);
     return reinterpret_cast<char*>(ptr);
 }
 
+
+/**
+ * @brief Decodes a varint32 from [p, limit).
+ * @return Pointer to the byte after the varint, or nullptr on failure.
+ */
 const char* GetVarint32Ptr(const char* p, const char* limit, uint32_t* v) {
-    if (p < limit) {
-        uint32_t result = *(reinterpret_cast<const uint8_t*>(p));
-        if ((result & 128) == 0) {
-            *v = result;
-            return p + 1;
-        }
-    }
-    // Fallback for multi-byte varints
     uint32_t result = 0;
-    for (uint32_t shift = 0; shift <= 28 && p < limit; shift += 7) {
-        uint32_t byte = *(reinterpret_cast<const uint8_t*>(p));
-        p++;
-        if (byte & 128) {
-            // More bytes are coming
-            result |= ((byte & 127) << shift);
-        } else {
-            result |= (byte << shift);
+    uint32_t shift  = 0;
+
+    while (shift <= kMaxShift && p < limit) {
+        uint32_t byte = static_cast<uint8_t>(*p++);
+        result |= ((byte & kValueMask) << shift);
+
+        if ((byte & kContinuationBit) == 0) {
             *v = result;
             return p;
         }
+        shift += kBitsPerByte;
     }
-    return nullptr;
+    return nullptr; // malformed or truncated
 }
 
 } // namespace lumina
