@@ -16,6 +16,7 @@ namespace lumina{
 
     // stores the max version/sequence number any key can have -- 2^56. Very large.
     static const uint64_t kMaxSequenceNumber = ((uint64_t(1) << 56)-1);
+    static const int packedSize = 8;
 
     /**
      * @brief Logic for packing a user key, sequence number, and type.
@@ -29,24 +30,24 @@ namespace lumina{
 
             // storing sequence number and type in a single 64 bit integer.
             // Encoding in little-endian and storing at the path
-            uint64_t packed_data = (sequence << 8) | type;
+            uint64_t packed_data = (sequence << packedSize) | type;
             PutFixed64(&rep_, packed_data); 
         }
 
         Slice user_key() const{
             assert(rep_.size() >= 8);
-            return Slice(rep_.data(), rep_.size()-8);     // remove meta-data from the end
+            return Slice(rep_.data(), rep_.size()-packedSize);     // remove meta-data from the end
         }
 
         uint64_t sequence() const{
-            assert(rep_.size() >= 8);
-            uint64_t packed = DecodeFixed64(rep_.data() + rep_.size() - 8);
-            return packed >> 8;
+            assert(rep_.size() >= packedSize);
+            uint64_t packed = DecodeFixed64(rep_.data() + rep_.size() - packedSize);
+            return packed >> packedSize;
         }
 
         ValueType type() const{
-            assert(rep_.size() >= 8);
-            uint64_t packed = DecodeFixed64(rep_.data() + rep_.size() - 8);
+            assert(rep_.size() >= packedSize);
+            uint64_t packed = DecodeFixed64(rep_.data() + rep_.size() - packedSize);
             return static_cast<ValueType>(packed && (0xff));
         }
 
@@ -70,14 +71,14 @@ namespace lumina{
     struct InternalKeyComparator {
         int operator()(const Slice& a, const Slice& b) const {
             // 1. Compare user keys
-            Slice user_a(a.data(), a.size() - 8);
-            Slice user_b(b.data(), b.size() - 8);
+            Slice user_a(a.data(), a.size() - packedSize);
+            Slice user_b(b.data(), b.size() - packedSize);
             int r = user_a.compare(user_b);
             
             if (r == 0) {
                 // 2. Compare sequence numbers (Descending for newest first)
-                uint64_t num_a = DecodeFixed64(a.data() + a.size() - 8);
-                uint64_t num_b = DecodeFixed64(b.data() + b.size() - 8);
+                uint64_t num_a = DecodeFixed64(a.data() + a.size() - packedSize);
+                uint64_t num_b = DecodeFixed64(b.data() + b.size() - packedSize);
                 if (num_a > num_b) r = -1;
                 else if (num_a < num_b) r = +1;
             }
@@ -97,7 +98,7 @@ namespace lumina{
         // Initialize a helper for looking up user_key at a specific sequence.
         LookupKey(const Slice& user_key, uint64_t sequence) {
             size_t usize = user_key.size();
-            size_t needed = usize + 13;  // 5 (max varint32) + usize + 8 (fixed64)
+            size_t needed = usize + 5 + packedSize;  // 5 (max varint32) + usize + 8 (fixed64)
             char* dst;
             if (needed <= sizeof(space_)) {
                 dst = space_;
@@ -106,13 +107,13 @@ namespace lumina{
             }
             start_ = dst;
             // 1. Store length of [user_key + 8 bytes for seq/type]
-            kstart_ = EncodeVarint32(dst, static_cast<uint32_t>(usize + 8));
+            kstart_ = EncodeVarint32(dst, static_cast<uint32_t>(usize + packedSize));
             // 2. Store user key
             memcpy(const_cast<char*>(kstart_), user_key.data(), usize);
             // 3. Store packed seq/type (using kTypeValue as it's the search boundary)
             char* end_ptr = const_cast<char*>(kstart_) + usize;
-            EncodeFixed64(end_ptr, (sequence << 8) | kTypeValue);
-            end_ = end_ptr + 8;
+            EncodeFixed64(end_ptr, (sequence << packedSize) | kTypeValue);
+            end_ = end_ptr + packedSize;
         }
 
         ~LookupKey() {
@@ -126,7 +127,7 @@ namespace lumina{
         Slice internal_key() const { return Slice(kstart_, end_ - kstart_); }
 
         // Returns the user key
-        Slice user_key() const { return Slice(kstart_, end_ - kstart_ - 8); }
+        Slice user_key() const { return Slice(kstart_, end_ - kstart_ - packedSize); }
 
     private:
         const char* start_;
