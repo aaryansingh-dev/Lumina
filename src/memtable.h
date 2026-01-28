@@ -21,6 +21,7 @@ public:
         explicit KeyComparator(InternalKeyComparator c) : comparator(c) {}
         
         // This operator is used by the SkipList to compare two entries
+        // functor for proper compare_() in the  skiplist
         int operator()(const char* a, const char* b) const;
     };
 
