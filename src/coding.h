@@ -86,6 +86,11 @@ namespace lumina{
      * Returns pointer after the value, or nullptr on error.
      */
     const char* GetVarint32Ptr(const char* p, const char* limit, uint32_t* v);
+
+    /**
+     * @brief Returns the number of bytes needed to encode a value as a varint.
+     */
+    int VarintLength(uint64_t v);
 }
 
 #endif

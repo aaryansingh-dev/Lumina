@@ -8,7 +8,8 @@ namespace lumina {
     constexpr uint32_t kBitsPerByte     = 7;
     constexpr uint32_t kMaxVarintBytes  = 5;           // ceil(32 / 7)
     constexpr uint32_t kMaxShift        = 28;          // (kMaxVarintBytes - 1) * 7
-}
+    constexpr uint32_t B = 128; 
+    }
 
 /**
  * @brief Encodes a 32-bit unsigned integer into variable-length format.
@@ -45,6 +46,19 @@ const char* GetVarint32Ptr(const char* p, const char* limit, uint32_t* v) {
         shift += kBitsPerByte;
     }
     return nullptr; // malformed or truncated
+}
+
+
+/**
+ * @brief Returns the number of bytes needed to encode a value as a varint.
+ */
+int VarintLength(uint64_t v) {
+    int len = 1;
+    while (v >= B) {
+        v >>= kBitsPerByte;
+        len++;
+    }
+    return len;
 }
 
 } // namespace lumina
