@@ -48,7 +48,7 @@ namespace lumina{
         ValueType type() const{
             assert(rep_.size() >= packedSize);
             uint64_t packed = DecodeFixed64(rep_.data() + rep_.size() - packedSize);
-            return static_cast<ValueType>(packed && (0xff));
+            return static_cast<ValueType>(packed & (0xff));
         }
 
         Slice Encode() const{

@@ -131,7 +131,7 @@ public:
 private:
 
     enum {kMaxHeight = 12 };
-    constexpr int kBranchingFactor = 4;
+    const int kBranchingFactor = 4;
 
     Node* const head_;
     Comparator const compare_;
