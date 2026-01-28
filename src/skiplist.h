@@ -131,6 +131,7 @@ public:
 private:
 
     enum {kMaxHeight = 12 };
+    constexpr int kBranchingFactor = 4;
 
     Node* const head_;
     Comparator const compare_;
@@ -250,7 +251,7 @@ int SkipList<Key, Comparator>::RandomHeight() {
     while (height < kMaxHeight) {
         // Simple LCG step
         seed = seed * seed_multiplier + seed_add;
-        if ((seed % 4) == 0) {
+        if ((seed % kBranchingFactor) == 0) {
             height++;
         } else {
             break;
