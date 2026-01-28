@@ -27,6 +27,15 @@ int MemTable::KeyComparator::operator()(const char* a, const char* b) const {
     return comparator(a, b);
 }
 
+/**
+ * @brief Logic for extracting a slice that is prefixed by a varint32 length.
+ */
+static Slice GetLengthPrefixedSlice(const char* data) {
+    uint32_t len;
+    const char* p = GetVarint32Ptr(data, data + 5, &len);
+    return Slice(p, len);
+}
+
 MemTable::MemTable(const InternalKeyComparator& comparator):
     comparator_(KeyComparator(comparator)),
     refs_(0),
@@ -63,6 +72,11 @@ void MemTable::Add(uint64_t sequence, ValueType type, const Slice& key, const Sl
     table_.Insert(buf);
     usage_.fetch_add(encoded_length, std::memory_order_relaxed);
 
+}
+
+
+bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
+    
 }
 
 
