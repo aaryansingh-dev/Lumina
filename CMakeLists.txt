@@ -18,6 +18,7 @@ add_library(lumina
     src/crc32.cc
     src/log_writer.cc
     src/coding.cc
+    src/memtable.cc
 
     # Optional: headers for IDE visibility
     include/lumina/common.h
