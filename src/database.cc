@@ -31,8 +31,10 @@ public:
     }
 
     virtual ~DatabaseImpl() override{
-        // clean up logic
-        // destructor
+        if (log_) delete log_;
+        if (mem_) {
+            mem_->Unref(); // Drop our reference
+        }
     }
 
     Status Put(const Slice& key, const Slice& value) override{
