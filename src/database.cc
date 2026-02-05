@@ -1,6 +1,12 @@
 #include <iostream>
+#include <mutex>
+#include <fstream>
 
 #include "lumina/db.h"
+#include "lumina/options.h"
+#include "log_writer.h"
+#include "dbformat.h"
+#include "memtable.h"
 
 namespace lumina{
 
@@ -14,8 +20,14 @@ class DatabaseImpl: public DB{
 
 public:
 
-    DatabaseImpl(const Options& options, const std::string& name) : options_(options), name_(name){
-        // initialization logic to be added
+    DatabaseImpl(const Options& options, const std::string& name) : 
+    options_(options), 
+    name_(name),
+    mem_(nullptr),
+    log_(nullptr)   {
+        
+        InternalKeyComparator cmp;
+        mem_ = new MemTable(cmp);
     }
 
     virtual ~DatabaseImpl() override{
@@ -44,6 +56,12 @@ public:
 private:
     Options options_;
     std::string name_;
+
+    std::mutex mutex_;
+    MemTable* mem_;
+
+    std::ofstream logfile_;
+    log::Writer* log_;
 };
 
 
