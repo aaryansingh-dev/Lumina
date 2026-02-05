@@ -59,7 +59,7 @@ void MemTable::Add(uint64_t sequence, ValueType type, const Slice& key, const Sl
     size_t value_size = value.size();
     size_t internal_key_size = key_size + tagSize;   // this 8 bytes stores 7 byte sequence + 1 byte type
     
-    size_t encoded_length = VarintLength(key_size) + key_size + VarintLength(value_size) + value_size;
+    size_t encoded_length = VarintLength(internal_key_size) + internal_key_size + VarintLength(value_size) + value_size;
 
     char* buf = new char[encoded_length]; // buffer to store the key-value pair
 
