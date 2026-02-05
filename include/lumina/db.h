@@ -34,7 +34,7 @@ public:
      * 
      * Pointer is created for std::string, to avoid dangling pointers after the memtable is flushed to memory.
      */
-    virtual Status Get(const Slice& key, const std::string* value) = 0;
+    virtual Status Get(const Slice& key, std::string* value) = 0;
 
 
     /**

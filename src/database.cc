@@ -79,10 +79,23 @@ public:
         return Status::OK();
     }
     
-    Status Get(const Slice& key, const std::string* value) override {
-        (void)key;
-        (void)value;
-        return Status::OK();
+    Status Get(const Slice& key, std::string* value) override {
+        // we need a consistent view of the sequence number in a full engine.
+        // For now, we look for the latest version (kMaxSequenceNumber).
+        LookupKey lkey(key, kMaxSequenceNumber);
+        
+        Status s;
+        if (mem_->Get(lkey, value, &s)) {
+            // Found in MemTable (either Value or Deleted)
+            if (s.IsNotFound()) {
+                return Status::NotFound("Key not found (deleted)");
+            }
+            return Status::OK();
+        }
+
+        // Phase 2: We only check MemTable. 
+        // Phase 3 will add SSTable lookup here.
+        return Status::NotFound("Key not found");
     }
 
     Status Delete(const Slice& key) override{
