@@ -98,8 +98,33 @@ public:
         return Status::NotFound("Key not found");
     }
 
-    Status Delete(const Slice& key) override{
-        (void)key;
+    Status Delete(const Slice& key) override {
+        std::lock_guard<std::mutex> lock(mutex_);
+        uint64_t seq = 2; // Placeholder sequence
+
+        // Deletion is just writing a new record with kTypeDeletion
+        InternalKey internal_key(key, seq, kTypeDeletion);
+
+        // Serialize for WAL (Value is empty for deletion)
+        std::string entry;
+        char varint_buf[5];
+        char* ptr;
+
+        // Encode Internal Key Size
+        ptr = EncodeVarint32(varint_buf, static_cast<uint32_t>(internal_key.Encode().size()));
+        entry.append(varint_buf, ptr - varint_buf);
+        entry.append(internal_key.Encode().data(), internal_key.Encode().size());
+        
+        // Encode Value Size (0)
+        ptr = EncodeVarint32(varint_buf, 0); 
+        entry.append(varint_buf, ptr - varint_buf);
+        
+        Status s = log_->AddRecord(Slice(entry));
+        if (!s.ok()) return s;
+
+        // Add Tombstone to MemTable
+        mem_->Add(seq, kTypeDeletion, key, Slice());
+        
         return Status::OK();
     }
 
