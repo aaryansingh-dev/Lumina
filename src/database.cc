@@ -35,6 +35,7 @@ public:
         if (mem_) {
             mem_->Unref(); // Drop our reference
         }
+        logfile_.close();
     }
 
     Status Put(const Slice& key, const Slice& value) override{
@@ -128,6 +129,22 @@ public:
         return Status::OK();
     }
 
+    Status Initialize() {
+        // Open the WAL file in Append + Binary mode
+        std::string log_path = name_ + "/LOG";
+        
+        // For this step, assume directory exists or user creates it.
+        
+        logfile_.open(log_path, std::ios::binary | std::ios::app);
+        if (!logfile_.is_open()) {
+            return Status::IOError("Could not open WAL file: " + log_path);
+        }
+
+        log_ = new log::Writer(&logfile_);
+        mem_->Ref(); // The DB implementation holds a reference
+        return Status::OK();
+    }
+
 private:
     Options options_;
     std::string name_;
@@ -140,13 +157,19 @@ private:
 };
 
 
-Status DB::Open(const Options& options, const std::string& name, DB** dbptr){
+Status DB::Open(const Options& options, const std::string& name, DB** dbptr) {
     *dbptr = nullptr;
-
-    DatabaseImpl* implementation = new DatabaseImpl(options, name);
-    *dbptr = implementation;
-
-    return Status::OK();
+    
+    DatabaseImpl* impl = new DatabaseImpl(options, name);
+    Status s = impl->Initialize();
+    
+    if (s.ok()) {
+        *dbptr = impl;
+    } else {
+        delete impl;
+    }
+    
+    return s;
 }
 
 }
